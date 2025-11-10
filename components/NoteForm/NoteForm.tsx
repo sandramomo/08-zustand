@@ -3,7 +3,7 @@
 import css from "./NoteForm.module.css";
 import { useRouter } from "next/navigation";
 import { addNote } from "@/lib/api";
-import { useNoteDraftStore } from "@/lib/stores/noteStore";
+import { useNoteDraftStore } from "@/lib/store/noteStore";
 
 interface NoteFormProps {
   handleCancelNote: () => void;
