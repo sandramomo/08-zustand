@@ -6,6 +6,7 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
+
 const NotePreviewPage = async ({ params }: Props) => {
   const { id } = await params;
 

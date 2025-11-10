@@ -1,93 +1,97 @@
-import { ErrorMessage, Field, Form, Formik } from "formik";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+"use client";
+
 import css from "./NoteForm.module.css";
-import * as Yup from "yup";
+import { useRouter } from "next/navigation";
 import { addNote } from "@/lib/api";
+import { useNoteDraftStore } from "@/lib/stores/noteStore";
 
 interface NoteFormProps {
   handleCancelNote: () => void;
 }
 
-interface FormValues {
-  title: string;
-  content: string;
-  tag: "Todo" | "Work" | "Personal" | "Meeting" | "Shopping";
-}
-
-const Schema = Yup.object().shape({
-  title: Yup.string()
-    .required("Title is required")
-    .min(3, "Title must be at least 3 characters")
-    .max(50, "Title is too long"),
-  content: Yup.string()
-    .max(500, "Content is too long"),
-  tag: Yup.string()
-    .required("Tag is required")
-    .oneOf(["Todo", "Work", "Personal", "Meeting", "Shopping"], "Invalid tag value"),
-});
-
 export default function NoteForm({ handleCancelNote }: NoteFormProps) {
-  const queryClient = useQueryClient();
+  const router = useRouter();
+  const { draft, setDraft, clearDraft } = useNoteDraftStore();
+  
+  const handleChange = (
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
+    setDraft({
+      ...draft,
+      [event.target.name]: event.target.value,
+    });
+  };
+  async function handleSubmit(formData: FormData) {
+    
+    const note = {
+      title: formData.get("title") as string,
+      content: formData.get("content") as string,
+      tag: formData.get("tag") as string,
+    };
+      clearDraft();
 
-  const { mutate, isPending } = useMutation({
-    mutationFn: addNote,
-    onSuccess: () => {
-     queryClient.invalidateQueries({ queryKey: ["notes"] }); 
+    try {
+      await addNote(note);
+      router.refresh();
       handleCancelNote();
-    },
-    onError: (error) => {
+    } catch (error) {
       console.error("Error adding note:", error);
-    },
-  });
-
-  const initialValues: FormValues = {
-    title: "",
-    content: "",
-    tag: "Todo",
-  };
-
-  const handleSubmit = async (values: FormValues) => {
-    await mutate(values);
-  };
+    }
+  }
 
   return (
-    <Formik initialValues={initialValues} onSubmit={handleSubmit} validationSchema={Schema}>
-      {() => (
-        <Form className={css.form}>
-          <div className={css.formGroup}>
-            <label htmlFor="title">Title</label>
-            <Field id="title" name="title" type="text" className={css.input} />
-            <ErrorMessage name="title" component="div" className={css.error} />
-          </div>
+    <form action={handleSubmit} className={css.form}>
+      <div className={css.formGroup}>
+        <label htmlFor="title">Title</label>
+        <input
+          id="title"
+          name="title"
+          type="text"
+          className={css.input}
+          minLength={3}
+          maxLength={50}
+          required
+          defaultValue={draft?.title} onChange={handleChange}
+        />
+      </div>
 
-          <div className={css.formGroup}>
-            <label htmlFor="content">Content</label>
-            <Field as="textarea" id="content" name="content" rows={8} className={css.textarea} />
-            <ErrorMessage name="content" component="div" className={css.error} />
-          </div>
+      <div className={css.formGroup}>
+        <label htmlFor="content">Content</label>
+        <textarea
+          id="content"
+          name="content"
+          rows={8}
+          maxLength={500}
+          className={css.textarea}
+          defaultValue={draft?.content} onChange={handleChange}
+        />
+      </div>
 
-          <div className={css.formGroup}>
-            <label htmlFor="tag">Tag</label>
-            <Field as="select" id="tag" name="tag" className={css.select}>
-              <option value="Todo">Todo</option>
-              <option value="Work">Work</option>
-              <option value="Personal">Personal</option>
-              <option value="Meeting">Meeting</option>
-              <option value="Shopping">Shopping</option>
-            </Field>
-            <ErrorMessage name="tag" component="div" className={css.error} />
-          </div>
+      <div className={css.formGroup}>
+        <label htmlFor="tag">Tag</label>
+        <select id="tag" name="tag" className={css.select} required defaultValue={draft?.tag} onChange={handleChange}>
+          <option value="Todo">Todo</option>
+          <option value="Work">Work</option>
+          <option value="Personal">Personal</option>
+          <option value="Meeting">Meeting</option>
+          <option value="Shopping">Shopping</option>
+        </select>
+      </div>
 
-          <div className={css.actions}>
-            <button type="button" className={css.cancelButton} onClick={handleCancelNote}>
-              Cancel
-            </button>
-            <button type="submit" className={css.submitButton} disabled={isPending}>
-              Create note
-            </button>
-          </div>
-        </Form>
-      )}
-    </Formik>
+      <div className={css.actions}>
+        <button
+          type="button"
+          className={css.cancelButton}
+          onClick={handleCancelNote}
+        >
+          Cancel
+        </button>
+        <button type="submit" className={css.submitButton}>
+          Create note
+        </button>
+      </div>
+    </form>
   );
 }
