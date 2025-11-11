@@ -2,8 +2,10 @@
 
 import css from "./NoteForm.module.css";
 import { useRouter } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { addNote } from "@/lib/api";
 import { useNoteDraftStore } from "@/lib/store/noteStore";
+import { NewNote } from "@/types/note";
 
 interface NoteFormProps {
   handleCancelNote: () => void;
@@ -11,34 +13,41 @@ interface NoteFormProps {
 
 export default function NoteForm({ handleCancelNote }: NoteFormProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { draft, setDraft, clearDraft } = useNoteDraftStore();
-  
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: (note: NewNote) => addNote(note),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["notes"] });
+
+      clearDraft();
+      handleCancelNote();
+      router.back();
+    },
+    onError: (error) => {
+      console.error(" Error adding note:", error);
+    },
+  });
+
   const handleChange = (
     event: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    >
   ) => {
     setDraft({
       ...draft,
       [event.target.name]: event.target.value,
     });
   };
+
   async function handleSubmit(formData: FormData) {
-    
-    const note = {
+    const note: NewNote = {
       title: formData.get("title") as string,
       content: formData.get("content") as string,
       tag: formData.get("tag") as string,
     };
-      clearDraft();
-
-    try {
-      await addNote(note);
-      router.refresh();
-      handleCancelNote();
-    } catch (error) {
-      console.error("Error adding note:", error);
-    }
+    mutate(note);
   }
 
   return (
@@ -53,7 +62,9 @@ export default function NoteForm({ handleCancelNote }: NoteFormProps) {
           minLength={3}
           maxLength={50}
           required
-          defaultValue={draft?.title} onChange={handleChange}
+          defaultValue={draft?.title}
+          onChange={handleChange}
+          disabled={isPending}
         />
       </div>
 
@@ -65,13 +76,23 @@ export default function NoteForm({ handleCancelNote }: NoteFormProps) {
           rows={8}
           maxLength={500}
           className={css.textarea}
-          defaultValue={draft?.content} onChange={handleChange}
+          defaultValue={draft?.content}
+          onChange={handleChange}
+          disabled={isPending}
         />
       </div>
 
       <div className={css.formGroup}>
         <label htmlFor="tag">Tag</label>
-        <select id="tag" name="tag" className={css.select} required defaultValue={draft?.tag} onChange={handleChange}>
+        <select
+          id="tag"
+          name="tag"
+          className={css.select}
+          required
+          defaultValue={draft?.tag}
+          onChange={handleChange}
+          disabled={isPending}
+        >
           <option value="Todo">Todo</option>
           <option value="Work">Work</option>
           <option value="Personal">Personal</option>
@@ -88,8 +109,12 @@ export default function NoteForm({ handleCancelNote }: NoteFormProps) {
         >
           Cancel
         </button>
-        <button type="submit" className={css.submitButton}>
-          Create note
+        <button
+          type="submit"
+          className={css.submitButton}
+          disabled={isPending}
+        >
+Create note
         </button>
       </div>
     </form>

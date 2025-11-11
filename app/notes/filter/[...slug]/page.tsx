@@ -5,20 +5,15 @@ import { Metadata } from "next";
 import css from '../../Notes.module.css'
 import Link from "next/link";
 
-
-
-type MetadataProps = {
-  params: Promise<{ id: string }>
-}
-
 type Props = {
   params: Promise<{ slug: string[] }>;
 };
 
 
-export async function generateMetadata({ params }: MetadataProps): Promise<Metadata> {
-  const { id } = await params
-  const note = await getNotesByQuery(id)
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+const { slug } = await params;
+const category = slug[0] === "all" ? undefined : (slug[0] as NoteTag);
+const note = await getNotesByQuery("", 1, category);
   console.log(note)
   return {
     title: `Notes list`,
@@ -26,7 +21,7 @@ export async function generateMetadata({ params }: MetadataProps): Promise<Metad
     openGraph: {
     title: 'Notes list',
     description: 'A collection of personal notes for easy and comfortable access',
-    url: '',
+    url: `https://08-zustand-vert-three.vercel.app/notes/filter/${category}`,
     images: [
         {
           url: 'https://ac.goit.global/fullstack/react/notehub-og-meta.jpg',
