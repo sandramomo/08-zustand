@@ -12,13 +12,14 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const category = slug[0] === "all" ? undefined : (slug[0] as NoteTag);
+    const displayCategory = category ?? "All";
   return {
-    title: `${category} notes list`,
-    description: `A collection of personal ${category} notes for easy and comfortable access`,
+    title: `${displayCategory} notes list`,
+    description: `A collection of personal ${displayCategory} notes for easy and comfortable access`,
     openGraph: {
-      title: `${category} notes list`,
-      description: `A collection of personal ${category} notes for easy and comfortable access`,
-      url: `https://08-zustand-vert-three.vercel.app/notes/filter/${category}`,
+      title: `${displayCategory} notes list`,
+      description: `A collection of personal ${displayCategory} notes for easy and comfortable access`,
+      url: `https://08-zustand-vert-three.vercel.app/notes/filter/${displayCategory}`,
       images: [
         {
           url: 'https://ac.goit.global/fullstack/react/notehub-og-meta.jpg',
@@ -38,7 +39,6 @@ const NotesByCategory = async ({ params }: Props) => {
 
   const queryClient = new QueryClient();
 
-  // Prefetch data for hydration
   const data = await queryClient.fetchQuery({
     queryKey: ["notes", category ?? "", page],
     queryFn: () => getNotesByQuery(undefined, page, category),
