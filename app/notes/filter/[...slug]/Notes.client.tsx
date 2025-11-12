@@ -1,7 +1,7 @@
 'use client';
 import { useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
 import SearchBox from "@/components/SearchBox/SearchBox";
@@ -9,7 +9,7 @@ import Pagination from "@/components/Pagination/Pagination";
 import NoteList from "@/components/NoteList/NoteList";
 import { getNotesByQuery, NoteTag } from "@/lib/api";
 
-import css from "./Notes.module.css";
+import css from "../../Notes.module.css";
 
 interface NotesClientProps {
   tag?: NoteTag;
@@ -31,6 +31,7 @@ function NotesClient({ tag }: NotesClientProps) {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["notes", { tag, search, page: currentPage }],
     queryFn: () => getNotesByQuery(search, currentPage, tag),
+     placeholderData: keepPreviousData,
   });
 
   const notes = data?.notes ?? [];
@@ -40,7 +41,7 @@ function NotesClient({ tag }: NotesClientProps) {
     <div className={css.app}>
       <div className={css.toolbar}>
         <SearchBox onSearch={handleSearchChange} />
-        <Link href="/notes/action/create" className={css.createButton}>
+        <Link href="/notes/action/create" className={css.button}>
           + Create note
         </Link>
       </div>
