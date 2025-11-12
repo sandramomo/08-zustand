@@ -2,27 +2,24 @@ import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query
 import { getNotesByQuery, NoteTag } from "@/lib/api";
 import NoteList from "@/components/NoteList/NoteList";
 import { Metadata } from "next";
-import css from '../../Notes.module.css'
+import css from '../../Notes.module.css';
 import Link from "next/link";
 
 type Props = {
   params: Promise<{ slug: string[] }>;
 };
 
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-const { slug } = await params;
-const category = slug[0] === "all" ? undefined : (slug[0] as NoteTag);
-const note = await getNotesByQuery("", 1, category);
-  console.log(note)
+  const { slug } = await params;
+  const category = slug[0] === "all" ? undefined : (slug[0] as NoteTag);
   return {
-    title: `Notes list`,
-    description: 'Notes list',
+    title: `${category} notes list`,
+    description: `A collection of personal ${category} notes for easy and comfortable access`,
     openGraph: {
-    title: 'Notes list',
-    description: 'A collection of personal notes for easy and comfortable access',
-    url: `https://08-zustand-vert-three.vercel.app/notes/filter/${category}`,
-    images: [
+      title: `${category} notes list`,
+      description: `A collection of personal ${category} notes for easy and comfortable access`,
+      url: `https://08-zustand-vert-three.vercel.app/notes/filter/${category}`,
+      images: [
         {
           url: 'https://ac.goit.global/fullstack/react/notehub-og-meta.jpg',
           width: 1200,
@@ -30,10 +27,9 @@ const note = await getNotesByQuery("", 1, category);
           alt: 'Note App',
         },
       ],
-  }
-  }
+    },
+  };
 }
-
 
 const NotesByCategory = async ({ params }: Props) => {
   const { slug } = await params;
@@ -42,7 +38,8 @@ const NotesByCategory = async ({ params }: Props) => {
 
   const queryClient = new QueryClient();
 
-  await queryClient.prefetchQuery({
+  // Prefetch data for hydration
+  const data = await queryClient.fetchQuery({
     queryKey: ["notes", category ?? "", page],
     queryFn: () => getNotesByQuery(undefined, page, category),
   });
@@ -52,10 +49,11 @@ const NotesByCategory = async ({ params }: Props) => {
   return (
     <HydrationBoundary state={dehydratedState}>
       <div className={css.toolbar}>
-              <Link className={css.button} href='/notes/action/create'>Create note + </Link>
+        <Link className={css.button} href='/notes/action/create'>
+          Create note +
+        </Link>
       </div>
-
-      <NoteList category={category} page={page} />
+      <NoteList notes={data.notes} />
     </HydrationBoundary>
   );
 };

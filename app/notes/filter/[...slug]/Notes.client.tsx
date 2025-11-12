@@ -1,11 +1,14 @@
 'use client';
 import { useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+
 import SearchBox from "@/components/SearchBox/SearchBox";
 import Pagination from "@/components/Pagination/Pagination";
 import NoteList from "@/components/NoteList/NoteList";
-import { NoteTag } from "@/lib/api";
+import { getNotesByQuery, NoteTag } from "@/lib/api";
+
 import css from "./Notes.module.css";
 
 interface NotesClientProps {
@@ -25,6 +28,14 @@ function NotesClient({ tag }: NotesClientProps) {
     debouncedSearch(query);
   };
 
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["notes", { tag, search, page: currentPage }],
+    queryFn: () => getNotesByQuery(search, currentPage, tag),
+  });
+
+  const notes = data?.notes ?? [];
+  const totalPages = data?.totalPages ?? 1;
+
   return (
     <div className={css.app}>
       <div className={css.toolbar}>
@@ -33,11 +44,15 @@ function NotesClient({ tag }: NotesClientProps) {
           + Create note
         </Link>
       </div>
-      <NoteList category={tag} page={currentPage} />
+
+      {isLoading && <p>Loading notes...</p>}
+      {isError && <p>Failed to load notes.</p>}
+
+      {!isLoading && !isError && <NoteList notes={notes} />}
 
       <div className={css.paginationWrapper}>
         <Pagination
-          totalPages={1}
+          totalPages={totalPages}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
         />

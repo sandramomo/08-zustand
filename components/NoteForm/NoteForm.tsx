@@ -22,7 +22,6 @@ export default function NoteForm({ handleCancelNote }: NoteFormProps) {
       await queryClient.invalidateQueries({ queryKey: ["notes"] });
 
       clearDraft();
-      handleCancelNote();
       router.back();
     },
     onError: (error) => {

@@ -1,22 +1,16 @@
 'use client';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getNotesByQuery, deleteNote, NoteTag } from "@/lib/api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { deleteNote } from "@/lib/api";
 import type { Note } from "@/types/note";
 import Link from "next/link";
 import css from "./NoteList.module.css";
 
 interface NoteListProps {
-  category?: NoteTag;
-  page: number;
+  notes: Note[]; 
 }
 
-export default function NoteList({ category, page }: NoteListProps) {
+export default function NoteList({ notes }: NoteListProps) {
   const queryClient = useQueryClient();
-
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["notes", category ?? "", page],
-    queryFn: () => getNotesByQuery(undefined, page, category),
-  });
 
   const { mutate } = useMutation({
     mutationFn: (id: string) => deleteNote(id),
@@ -26,10 +20,9 @@ export default function NoteList({ category, page }: NoteListProps) {
     onError: (err) => console.error("Error deleting note:", err),
   });
 
-  if (isLoading) return <p>Loading notes...</p>;
-  if (isError || !data) return <p>Failed to load notes.</p>;
-
-  const notes: Note[] = data.notes;
+  if (!notes || notes.length === 0) {
+    return <p>No notes found.</p>;
+  }
 
   return (
     <ul className={css.list}>
